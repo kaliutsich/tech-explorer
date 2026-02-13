@@ -1,0 +1,229 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --ink: #12141a;
+    --muted: #5b6272;
+    --paper: #f6f4ef;
+    --accent: #ff7a00;
+    --accent-dark: #d85f00;
+    --chip: #171923;
+    --chip-ink: #f9f7f3;
+    --glow: #ffd9b3;
+}
+
+body.home {
+    font-family: "Fraunces", "Georgia", serif;
+    color: var(--ink);
+    background: radial-gradient(1200px 700px at 10% 10%, #fff1d8 0%, rgba(255,241,216,0) 60%),
+                radial-gradient(900px 500px at 90% 20%, #e9f1ff 0%, rgba(233,241,255,0) 55%),
+                var(--paper);
+    min-height: 100vh;
+    padding: 40px 20px 60px;
+}
+
+body.home .page {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+body.home header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+body.home .title {
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    letter-spacing: -0.02em;
+}
+
+body.home .subtitle {
+    font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+    color: var(--muted);
+    font-size: 1.1rem;
+    max-width: 620px;
+}
+
+body.home .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0 14px;
+}
+
+body.home .filter-btn {
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+    font-size: 0.95rem;
+    background: transparent;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+body.home .filter-btn:hover {
+    transform: translateY(-2px);
+    background: var(--ink);
+    color: var(--paper);
+}
+
+body.home .filter-btn.active {
+    background: var(--accent);
+    color: var(--ink);
+    border-color: var(--accent);
+    box-shadow: 0 10px 20px rgba(255,122,0,0.25);
+}
+
+body.home .count {
+    font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+    color: var(--muted);
+    margin-bottom: 14px;
+}
+
+body.home .link-list {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(18,20,26,0.08);
+    background: rgba(255,255,255,0.7);
+    font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+}
+
+body.home .link-list a {
+    color: var(--ink);
+    text-decoration: none;
+    display: inline-flex;
+    gap: 10px;
+    align-items: baseline;
+}
+
+body.home .link-list span {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+body.home .link-item.hidden {
+    display: none;
+}
+
+body.home .glow {
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, var(--glow) 0%, rgba(255,217,179,0) 70%);
+    filter: blur(10px);
+    z-index: -1;
+    top: 20px;
+    right: 10%;
+    opacity: 0.6;
+}
+
+body.home .status {
+    font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+    color: var(--muted);
+}
+
+body.article {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+body.article .container {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+body.article h1 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+}
+
+body.article .subtitle {
+    color: #666;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+body.article .tag-list {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+body.article .tag {
+    font-size: 0.75em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #f1f3ff;
+    color: #4b5ac4;
+    font-weight: 600;
+}
+
+body.article p {
+    color: #444;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+body.article .features {
+    list-style: none;
+    margin-top: 20px;
+}
+
+body.article .features li {
+    padding: 10px 0;
+    padding-left: 30px;
+    position: relative;
+    color: #555;
+}
+
+body.article .features li:before {
+    content: "\2713";
+    position: absolute;
+    left: 0;
+    color: #667eea;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+body.article .link {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: #667eea;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.3s;
+}
+
+body.article .link:hover {
+    background: #764ba2;
+}
+
+@media (max-width: 700px) {
+    body.home {
+        padding: 28px 16px 50px;
+    }
+}

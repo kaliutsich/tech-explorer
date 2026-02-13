@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="home">
+    <div class="glow" aria-hidden="true"></div>
+    <div class="page">
+        <header>
+            <h1 class="title">Tech Explorer</h1>
+            <p class="subtitle">Curated notes, installers, and tools in progress. Filter by tags to jump into topics quickly.</p>
+        </header>
+
+        <div class="filters" id="filters"></div>
+        <div class="count" id="count"></div>
+
+        <ul class="link-list" id="linkList">
+            <li class="link-item">
+                <a href="wix-toolset.html" data-tags="wix,msi,windows-installer">WiX Toolset <span>Updated 2026-02-13</span></a>
+            </li>
+            <li class="link-item">
+                <a href="javascript-classes.html" data-tags="javascript,classes,oop">JavaScript Classes <span>Updated 2026-02-13</span></a>
+            </li>
+        </ul>
+    </div>
+
+    <script>
+        const filtersEl = document.getElementById("filters");
+        const countEl = document.getElementById("count");
+        const items = Array.from(document.querySelectorAll(".link-item"));
+        let currentTag = "all";
+
+        const getTags = (anchor) => {
+            const raw = anchor.dataset.tags || "";
+            return raw.split(",").map((tag) => tag.trim()).filter(Boolean);
+        };
+
+        const buildTagButton = (tag) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "filter-btn";
+            button.textContent = tag === "all" ? "All" : tag;
+            button.dataset.tag = tag;
+            button.addEventListener("click", () => {
+                currentTag = tag;
+                updateFilters();
+                applyFilter();
+            });
+            return button;
+        };
+
+        const updateFilters = () => {
+            filtersEl.querySelectorAll("button").forEach((btn) => {
+                btn.classList.toggle("active", btn.dataset.tag === currentTag);
+            });
+        };
+
+        const applyFilter = () => {
+            let visibleCount = 0;
+            items.forEach((item) => {
+                const tags = getTags(item.querySelector("a"));
+                const matches = currentTag === "all" || tags.includes(currentTag);
+                item.classList.toggle("hidden", !matches);
+                if (matches) {
+                    visibleCount += 1;
+                }
+            });
+            countEl.textContent = `${visibleCount} page${visibleCount === 1 ? "" : "s"}`;
+        };
+
+        const initialize = () => {
+            const tagSet = new Set();
+            items.forEach((item) => {
+                getTags(item.querySelector("a")).forEach((tag) => tagSet.add(tag));
+            });
+
+            filtersEl.innerHTML = "";
+            filtersEl.appendChild(buildTagButton("all"));
+            Array.from(tagSet).sort().forEach((tag) => {
+                filtersEl.appendChild(buildTagButton(tag));
+            });
+
+            updateFilters();
+            applyFilter();
+        };
+
+        initialize();
+    </script>
+</body>
+</html>

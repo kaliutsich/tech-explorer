@@ -4,80 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WiX Toolset - Introduction</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            max-width: 600px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        h1 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 2.5em;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 1.2em;
-            margin-bottom: 30px;
-        }
-        p {
-            color: #444;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-        .features {
-            list-style: none;
-            margin-top: 20px;
-        }
-        .features li {
-            padding: 10px 0;
-            padding-left: 30px;
-            position: relative;
-            color: #555;
-        }
-        .features li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #667eea;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-        .link {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 12px 24px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: background 0.3s;
-        }
-        .link:hover {
-            background: #764ba2;
-        }
-    </style>
+    <link rel="stylesheet" href="css/main.css">
 </head>
-<body>
+<body class="article">
     <div class="container">
         <h1>WiX Toolset</h1>
         <div class="subtitle">Windows Installer XML</div>
+
+        <div class="tag-list" aria-label="Tags">
+            <span class="tag">wix</span>
+            <span class="tag">msi</span>
+            <span class="tag">windows-installer</span>
+        </div>
         
         <p>
             <strong>WiX Toolset</strong> is an open-source framework for building Windows

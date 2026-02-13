@@ -1,0 +1,16 @@
+{
+  "articles": [
+    {
+      "title": "WiX Toolset",
+      "path": "wix-toolset.html",
+      "tags": ["wix", "msi", "windows-installer"],
+      "updatedAt": "2026-02-13"
+    },
+    {
+      "title": "JavaScript Classes",
+      "path": "javascript-classes.html",
+      "tags": ["javascript", "classes", "oop"],
+      "updatedAt": "2026-02-13"
+    }
+  ]
+}
