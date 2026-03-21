@@ -13,6 +13,29 @@
     --chip: #171923;
     --chip-ink: #f9f7f3;
     --glow: #ffd9b3;
+    --border: rgba(18,20,26,0.12);
+    --code: rgba(0,0,0,0.03);
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --bad: #fb7185;
+    --shadow: 0 4px 12px rgba(0,0,0,.08);
+    --radius: 14px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: "Space Grotesk", "Trebuchet MS", sans-serif;
+    --serif: "Fraunces", "Georgia", serif;
+}
+
+html, body {
+    height: 100%;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
 }
 
 body.home {
@@ -225,5 +248,262 @@ body.article .link:hover {
 @media (max-width: 700px) {
     body.home {
         padding: 28px 16px 50px;
+    }
+}
+
+/* Guide page styles */
+body.guide {
+    margin: 0;
+    font-family: var(--sans);
+    background: radial-gradient(1200px 700px at 10% 10%, #fff1d8 0%, rgba(255,241,216,0) 60%),
+                radial-gradient(900px 500px at 90% 20%, #e9f1ff 0%, rgba(233,241,255,0) 55%),
+                var(--paper);
+    color: var(--ink);
+}
+
+body.guide .app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100%;
+}
+
+body.guide .sidebar {
+    background: rgba(255,255,255,0.7);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    min-width: 280px;
+}
+
+body.guide .sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+body.guide .title {
+    font-family: var(--serif);
+    font-size: 18px;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    margin: 0;
+    font-weight: 700;
+}
+
+body.guide .toc {
+    padding: 16px;
+    overflow: auto;
+    flex: 1;
+}
+
+body.guide .toc nav {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+body.guide .toc a {
+    display: block;
+    padding: 8px 12px;
+    margin: 2px 0;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    color: var(--ink);
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+body.guide .toc a:hover {
+    background: rgba(255,122,0,0.08);
+    border-color: rgba(255,122,0,0.2);
+    text-decoration: none;
+}
+
+body.guide .toc a.active {
+    background: rgba(255,122,0,0.12);
+    border-color: var(--accent);
+    font-weight: 500;
+}
+
+body.guide .main {
+    overflow: auto;
+    padding: 18px 18px 60px 18px;
+}
+
+body.guide .breadcrumb {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+}
+
+body.guide .breadcrumb a {
+    color: var(--accent);
+}
+
+body.guide .breadcrumb span {
+    margin: 0 6px;
+    color: var(--muted);
+}
+
+body.guide .content {
+    max-width: 1050px;
+    margin: 0 auto;
+}
+
+body.guide .hero {
+    padding: 20px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, .85);
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+}
+
+body.guide .hero h1 {
+    font-family: var(--serif);
+    margin: 0 0 12px 0;
+    font-size: 32px;
+    letter-spacing: -.02em;
+    color: var(--ink);
+}
+
+body.guide .hero p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+body.guide .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, .75);
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+    margin: 16px 0;
+    scroll-margin-top: 20px;
+    transition: box-shadow 0.3s ease;
+}
+
+body.guide .card:target {
+    box-shadow: 0 0 0 3px rgba(255,122,0,0.3), 0 4px 12px rgba(0,0,0,.08);
+}
+
+body.guide .card h2 {
+    font-family: var(--serif);
+    margin: 0 0 14px 0;
+    font-size: 24px;
+    letter-spacing: -.01em;
+    color: var(--ink);
+}
+
+body.guide .card h3 {
+    font-family: var(--serif);
+    margin: 20px 0 10px 0;
+    font-size: 18px;
+    color: var(--ink);
+}
+
+body.guide .card p,
+body.guide .card li {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink);
+}
+
+body.guide .muted {
+    color: var(--muted);
+}
+
+body.guide .kbd {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 8px;
+    border: 1px solid rgba(18,20,26,0.15);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.9);
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+body.guide .code {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--code);
+    overflow: auto;
+    margin: 12px 0;
+    color: var(--ink);
+}
+
+body.guide .note {
+    border-left: 3px solid rgba(255,122,0,.75);
+    background: rgba(255,122,0,.08);
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin: 12px 0;
+}
+
+body.guide .warn {
+    border-left: 3px solid rgba(251,191,36,.9);
+    background: rgba(251,191,36,.08);
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin: 12px 0;
+}
+
+body.guide .bad {
+    border-left: 3px solid rgba(251,113,133,.9);
+    background: rgba(251,113,133,.08);
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin: 12px 0;
+}
+
+body.guide .ok {
+    border-left: 3px solid rgba(52,211,153,.9);
+    background: rgba(52,211,153,.08);
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin: 12px 0;
+}
+
+body.guide .pill {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--chip-ink);
+    background: var(--chip);
+    border-radius: 999px;
+    padding: 5px 12px;
+    margin-right: 8px;
+    margin-top: 6px;
+}
+
+body.guide .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 1050px) {
+    body.guide .app {
+        grid-template-columns: 1fr;
+    }
+    body.guide .sidebar {
+        height: auto;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    body.guide .main {
+        padding: 12px;
+    }
+    body.guide .grid2 {
+        grid-template-columns: 1fr;
     }
 }

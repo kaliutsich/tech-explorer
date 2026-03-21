@@ -1,36 +1,738 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiX Toolset - Introduction</title>
-    <link rel="stylesheet" href="css/main.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WiX Toolset Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
 </head>
-<body class="article">
-    <div class="container">
-        <h1>WiX Toolset</h1>
-        <div class="subtitle">Windows Installer XML</div>
 
-        <div class="tag-list" aria-label="Tags">
-            <span class="tag">wix</span>
-            <span class="tag">msi</span>
-            <span class="tag">windows-installer</span>
-        </div>
-        
-        <p>
-            <strong>WiX Toolset</strong> is an open-source framework for building Windows
-  installation packages from XML source code.
-        </p>
-        
-        <ul class="features">
-            <li>Create MSI, MSM, and MSP packages</li>
-            <li>XML-based declarative syntax</li>
-            <li>Command-line and CI/CD integration</li>
-            <li>Full Windows Installer support</li>
-            <li>Open-source with optional commercial sponsorship</li>
-        </ul>
-        
-        <a href="https://wixtoolset.org" class="link" target="_blank">Visit Official Site</a>
+<body class="guide">
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <p class="title">WiX Toolset Guide</p>
     </div>
+
+    <div class="toc">
+      <nav>
+        <a href="#sec-0">Overview</a>
+        <a href="#sec-1">1. What we are building</a>
+        <a href="#sec-2">2. MSI fundamentals</a>
+        <a href="#sec-3">3. Tooling setup</a>
+        <a href="#sec-4">4. First MSI</a>
+        <a href="#sec-5">5. Add .NET payload</a>
+        <a href="#sec-6">6. Windows Service registration</a>
+        <a href="#sec-7">7. Kestrel configuration</a>
+        <a href="#sec-8">8. PWA packaging</a>
+        <a href="#sec-9">9. File locations & ACLs</a>
+        <a href="#sec-10">10. Shortcuts & UX</a>
+        <a href="#sec-11">11. Burn bootstrapper</a>
+        <a href="#sec-12">12. Upgrades</a>
+        <a href="#sec-13">13. Logging</a>
+        <a href="#sec-14">14. CI/CD integration</a>
+        <a href="#sec-15">15. Enterprise deployment</a>
+        <a href="#sec-16">16. Advanced topics</a>
+        <a href="#sec-17">17. Troubleshooting</a>
+        <a href="#sec-18">18. Reference snippets</a>
+        <a href="#sec-19">19. Next steps</a>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="breadcrumb">
+      <a href="index.html">Home</a>
+      <span>/</span>
+      <span>WiX Toolset</span>
+    </div>
+    
+    <div class="content">
+
+      <section class="hero" id="sec-0">
+        <h1>WiX Toolset from simple to advanced</h1>
+        <p>
+          This guide is written as a practical build recipe: we start with a tiny MSI, then grow it into a production-grade installer
+          that deploys a Windows Service hosting a Kestrel-based .NET Web API, plus a Windows-installed PWA that talks to that local API.
+          We also cover upgrades, logging, prerequisites via Burn, and deployment via Intune/SCCM style workflows.
+        </p>
+        <div style="margin-top:10px;">
+          <span class="pill">WiX v4</span>
+          <span class="pill">MSI</span>
+          <span class="pill">Burn</span>
+          <span class="pill">Upgrades</span>
+          <span class="pill">Logging</span>
+          <span class="pill">CI/CD</span>
+        </div>
+      </section>
+
+      <section class="card" id="sec-1">
+        <h2>1. What we are building (POC target)</h2>
+
+        <h3>1.1 Components</h3>
+        <ul>
+          <li>PWA: browser-based UI, installable on Windows (from Edge/Chrome). It runs as a desktop-like app, but it is still web tech.</li>
+          <li>.NET Web API: Kestrel-hosted local API, exposed on <span class="kbd">http://127.0.0.1:PORT</span> (or a named pipe in advanced variants).</li>
+          <li>Windows Service: controls lifecycle (start on boot, restart on failure, runs under a chosen identity), and hosts the .NET Web API.</li>
+          <li>Installer (MSI): lays down files, registers the service, sets config, opens firewall if needed, creates logs folders, and sets ACLs.</li>
+          <li>Optional bootstrapper (Burn): installs prerequisites (e.g., .NET Hosting Bundle / Desktop Runtime), then installs the MSI.</li>
+        </ul>
+
+        <h3>1.2 Typical flow at runtime</h3>
+        <div class="code">PWA (installed from browser)
+  └─ calls local API (localhost) for filesystem / device / local workflows
+        └─ .NET Web API hosted by Windows Service
+              └─ uses OS resources (filesystem, certificates, local databases, etc.)</div>
+
+        <div class="note">
+          Key architectural point: the MSI does not “install the PWA” in the same way it installs EXEs.
+          A PWA is usually installed by the browser based on a manifest + service worker.
+          Your MSI can still install the static web assets locally and register a start shortcut that opens the PWA URL,
+          but the actual “install” experience is browser-driven unless you build a custom wrapper.
+        </div>
+
+        <h3>1.3 Why WiX fits</h3>
+        <ul>
+          <li>Enterprise-friendly deployment: MSI is still the standard for Intune/SCCM/GPO software distribution.</li>
+          <li>Deterministic installs and upgrades: stable component rules, repair, rollback, logging.</li>
+          <li>Precise OS integration: services, ACLs, registry, firewall, shortcuts.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="sec-2">
+        <h2>2. The minimum you must understand about MSI (before writing WiX)</h2>
+
+        <h3>2.1 Product, Package, Feature, Component (the core model)</h3>
+        <ul>
+          <li>Product: the logical application. Identified by ProductCode. Changes on major upgrade.</li>
+          <li>Package: the MSI database file. Identified by PackageCode. Changes every build.</li>
+          <li>Feature: user-selectable grouping. Most apps have one “Complete” feature.</li>
+          <li>Component: the atomic install unit. A component is what MSI tracks for install/repair/uninstall.</li>
+        </ul>
+
+        <div class="warn">
+          The single most common MSI mistake: mixing files across components incorrectly or changing component GUIDs randomly.
+          This breaks upgrades, causes “ghost files”, and makes repair unpredictable.
+        </div>
+
+        <h3>2.2 KeyPath and how MSI knows “is this installed?”</h3>
+        <ul>
+          <li>A component must have a KeyPath resource (often a file, sometimes a registry value).</li>
+          <li>MSI uses KeyPath to detect if the component is present and consistent.</li>
+          <li>If KeyPath disappears, MSI may trigger self-repair (depending on advertisement and usage).</li>
+        </ul>
+
+        <h3>2.3 Upgrades 10-second summary</h3>
+        <ul>
+          <li>Major upgrade: new ProductCode, same UpgradeCode, version increases. Old version removed.</li>
+          <li>Minor upgrade: same ProductCode, version changes within allowed rules. Rarely used these days.</li>
+          <li>Patch (MSP): diff-based patching. Advanced, use only if you really need it.</li>
+        </ul>
+
+        <div class="note">
+          For most modern apps: do major upgrades only, keep it boring, predictable, supportable.
+        </div>
+      </section>
+
+      <section class="card" id="sec-3">
+        <h2>3. Tooling setup (WiX v4, CLI-first)</h2>
+
+        <h3>3.1 Install WiX v4</h3>
+        <p class="muted">WiX v4 is the modern line. If you are stuck with v3, keep the structure, but commands/extensions differ.</p>
+        <div class="code"># One common approach (example):
+# - install wix toolset v4 via official installer or package manager
+# - ensure 'wix' is available in PATH
+
+wix --version</div>
+
+        <h3>3.2 Recommended repo layout</h3>
+        <div class="code">/src
+  /ServiceHost                # .NET Windows Service hosting Kestrel
+  /PwaApp                      # PWA static assets (or source)
+  /Installer
+    /wix
+      Product.wxs
+      Fragments/
+      Includes/
+      Assets/
+    build.ps1
+    build.cmd</div>
+
+        <h3>3.3 Build outputs to feed WiX</h3>
+        <ul>
+          <li>.NET publish output: self-contained or framework-dependent (you decide).</li>
+          <li>PWA output: static files (dist) if you build with Vite/React/etc.</li>
+        </ul>
+        <div class="code"># Example: publish service host
+dotnet publish .\src\ServiceHost\ServiceHost.csproj -c Release -o .\artifacts\service
+
+# Example: build PWA
+# (depends on your toolchain)
+pnpm install
+pnpm build
+# output: .\src\PwaApp\dist  -> copy to .\artifacts\pwa</div>
+      </section>
+
+      <section class="card" id="sec-4">
+        <h2>4. Start simple: your first MSI installs one file</h2>
+
+        <h3>4.1 Minimal WiX project (concept)</h3>
+        <p>
+          Step one is not “install the whole system”. Step one is “create an MSI that installs one file to Program Files”.
+          Once this works reliably, you add complexity one layer at a time.
+        </p>
+
+        <h3>4.2 Minimal Product.wxs skeleton (WiX v4 style)</h3>
+        <div class="code">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"&gt;
+
+  &lt;Package Name="MyPOC"
+           Manufacturer="MyCompany"
+           Version="1.0.0"
+           UpgradeCode="{PUT-YOUR-UPGRADECODE-GUID-HERE}"&gt;
+
+    &lt;MajorUpgrade DowngradeErrorMessage="A newer version is already installed."/&gt;
+    &lt;MediaTemplate /&gt;
+
+    &lt;Feature Id="MainFeature" Title="MyPOC" Level="1"&gt;
+      &lt;ComponentGroupRef Id="MainComponents" /&gt;
+    &lt;/Feature&gt;
+
+  &lt;/Package&gt;
+
+  &lt;Fragment&gt;
+    &lt;StandardDirectory Id="ProgramFilesFolder"&gt;
+      &lt;Directory Id="INSTALLFOLDER" Name="MyPOC"&gt;
+        &lt;ComponentGroup Id="MainComponents" Directory="INSTALLFOLDER"&gt;
+          &lt;Component&gt;
+            &lt;File Source="..\..\artifacts\service\readme.txt" /&gt;
+          &lt;/Component&gt;
+        &lt;/ComponentGroup&gt;
+      &lt;/Directory&gt;
+    &lt;/StandardDirectory&gt;
+  &lt;/Fragment&gt;
+
+&lt;/Wix&gt;</div>
+
+        <h3>4.3 Build it</h3>
+        <div class="code"># Example WiX v4 build invocation pattern
+# (exact commands depend on your setup; keep it in your build script)
+wix build .\src\Installer\wix\Product.wxs -o .\artifacts\installer\MyPOC.msi</div>
+
+        <div class="ok">
+          Success criteria for this section:
+          you can install, repair, uninstall; and the file lands exactly where you expect.
+        </div>
+      </section>
+
+      <section class="card" id="sec-5">
+        <h2>5. Add the .NET service host payload (still no service registration)</h2>
+
+        <h3>5.1 Decide: framework-dependent vs self-contained</h3>
+        <ul>
+          <li>Framework-dependent: smaller MSI, requires .NET runtime installed (handled by Burn or enterprise baseline).</li>
+          <li>Self-contained: larger MSI, fewer external prerequisites, but you ship more bits and update more often.</li>
+        </ul>
+
+        <h3>5.2 Install the entire publish directory</h3>
+        <p class="muted">You normally do not list 200 files by hand. Use harvesting (carefully) or generate fragments at build time.</p>
+
+        <h3>5.3 Harvesting (safe-ish pattern)</h3>
+        <p>
+          Harvesting means generating WiX fragments from a folder.
+          The danger is unstable component GUIDs. The mitigation is stable component IDs and controlled harvesting.
+        </p>
+
+        <div class="warn">
+          Treat harvesting as codegen: commit generated fragments or generate them deterministically in CI.
+          Do not “harvest random” every time and hope upgrades work.
+        </div>
+
+        <div class="code"># Example idea (conceptual):
+# - harvest artifacts\service into a fragment file
+# - then wix build includes that fragment
+#
+# Your build script may:
+# 1) dotnet publish
+# 2) wix harvest ... -> ServiceFiles.wxs
+# 3) wix build Product.wxs ServiceFiles.wxs</div>
+
+        <h3>5.4 Keep a dedicated folder</h3>
+        <div class="code">INSTALLFOLDER
+  \Service
+     ServiceHost.exe
+     ServiceHost.dll
+     appsettings.json
+     ...</div>
+      </section>
+
+      <section class="card" id="sec-6">
+        <h2>6. Add Windows Service registration (core of the POC)</h2>
+
+        <h3>6.1 What we want from the service</h3>
+        <ul>
+          <li>Auto-start on boot.</li>
+          <li>Restart on failure (configured via service recovery options).</li>
+          <li>Runs under a chosen identity (LocalService, NetworkService, or a dedicated user).</li>
+          <li>Writes logs to a known location (ProgramData recommended).</li>
+        </ul>
+
+        <h3>6.2 Service identity selection (practical)</h3>
+        <ul>
+          <li>LocalService: low-privilege local account. Good default for local-only services.</li>
+          <li>NetworkService: can authenticate to network as the machine account. Use if you need domain/network resources.</li>
+          <li>Dedicated user: best control, but requires password management and ACL setup.</li>
+        </ul>
+
+        <div class="note">
+          For a localhost-only API that mostly touches local filesystem: LocalService is often enough, plus explicit ACLs on folders it must access.
+        </div>
+
+        <h3>6.3 ServiceInstall and ServiceControl (WiX extensions)</h3>
+        <p class="muted">In WiX, service installation usually uses the Util extension (varies between WiX versions). Conceptually:</p>
+        <div class="code">&lt;Component Id="cmp_Service" Guid="{PUT-STABLE-GUID-HERE}"&gt;
+  &lt;File Source="..\..\artifacts\service\ServiceHost.exe" KeyPath="yes" /&gt;
+
+  &lt;!-- Service installation metadata --&gt;
+  &lt;ServiceInstall Id="svcInstall"
+                  Name="MyPOC.ServiceHost"
+                  DisplayName="MyPOC Local API"
+                  Description="Hosts the local .NET Web API for the PWA"
+                  Start="auto"
+                  Type="ownProcess"
+                  ErrorControl="normal" /&gt;
+
+  &lt;ServiceControl Id="svcControl"
+                  Name="MyPOC.ServiceHost"
+                  Start="install"
+                  Stop="both"
+                  Remove="uninstall"
+                  Wait="yes" /&gt;
+&lt;/Component&gt;</div>
+
+        <div class="warn">
+          The exact XML element names and namespaces depend on WiX v4 extensions you include.
+          This guide shows the “what”; your implementation must match the actual extension schema you reference.
+        </div>
+
+        <h3>6.4 Service recovery (restart on failure)</h3>
+        <p>
+          Windows service recovery is not always covered by plain ServiceInstall.
+          Common pattern:
+        </p>
+        <ul>
+          <li>Set recovery via a custom action calling <span class="kbd">sc.exe failure</span> or PowerShell.</li>
+          <li>Or use a supported WiX extension element if available in your version.</li>
+        </ul>
+
+        <div class="code"># Example PowerShell (conceptual):
+sc.exe failure "MyPOC.ServiceHost" reset= 86400 actions= restart/5000/restart/5000/restart/5000
+sc.exe failureflag "MyPOC.ServiceHost" 1</div>
+
+        <div class="bad">
+          If you do this via custom action, do it as deferred + elevated, and make sure rollback is sane.
+          Custom actions are where many MSI setups become fragile.
+        </div>
+      </section>
+
+      <section class="card" id="sec-7">
+        <h2>7. Configure Kestrel for a local-only API</h2>
+
+        <h3>7.1 Port selection strategy</h3>
+        <ul>
+          <li>Fixed port (simple): e.g., 5123. Easier firewall rules and support docs.</li>
+          <li>Dynamic port (advanced): write selected port to config/registry and let PWA discover it.</li>
+          <li>Named pipe (advanced): avoids port conflicts and firewall questions, but needs client support.</li>
+        </ul>
+
+        <h3>7.2 Avoid exposing beyond localhost</h3>
+        <ul>
+          <li>Bind to 127.0.0.1 only.</li>
+          <li>Do not bind to 0.0.0.0 unless you explicitly want LAN access.</li>
+          <li>Consider simple auth even on localhost if you have sensitive operations.</li>
+        </ul>
+
+        <div class="code"># Example appsettings.json idea:
+{
+  "Kestrel": {
+    "Endpoints": {
+      "Http": {
+        "Url": "http://127.0.0.1:5123"
+      }
+    }
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information"
+    }
+  }
+}</div>
+
+        <h3>7.3 Where installer-owned config should live</h3>
+        <ul>
+          <li>Immutable binaries: Program Files.</li>
+          <li>Mutable config & logs: ProgramData (common), or a dedicated folder with ACLs.</li>
+        </ul>
+
+        <div class="note">
+          When you place config in Program Files, you often require admin rights to edit it later.
+          That is sometimes okay, but operationally ProgramData is usually easier.
+        </div>
+      </section>
+
+      <section class="card" id="sec-8">
+        <h2>8. PWA packaging strategy (realistic options)</h2>
+
+        <h3>8.1 Option A: classic PWA served from a public URL</h3>
+        <ul>
+          <li>Pros: simplest, browser handles install and updates naturally.</li>
+          <li>Cons: requires internet and a stable URL, may be tricky in offline environments.</li>
+        </ul>
+
+        <h3>8.2 Option B: local static site served by the same Windows Service</h3>
+        <ul>
+          <li>Service hosts two things:
+            <ul>
+              <li>Static files for UI</li>
+              <li>API endpoints</li>
+            </ul>
+          </li>
+          <li>User opens <span class="kbd">http://127.0.0.1:5123</span>, sees UI, and installs PWA from there.</li>
+          <li>Works offline. MSI updates both UI and API.</li>
+        </ul>
+
+        <div class="ok">
+          For your POC (PWA + local API), Option B is usually the most coherent: one service hosts everything locally.
+        </div>
+
+        <h3>8.3 Option C: MSI installs “web assets”, browser installs PWA later</h3>
+        <ul>
+          <li>MSI lays down PWA files into Program Files.</li>
+          <li>MSI creates a shortcut that opens Edge/Chrome to the local URL.</li>
+          <li>User clicks “Install app” in the browser UI.</li>
+        </ul>
+
+        <h3>8.4 What WiX can actually do here</h3>
+        <ul>
+          <li>Install the static UI files to a folder used by the service.</li>
+          <li>Create shortcuts (Start menu, Desktop) that open the local UI URL.</li>
+          <li>Register URL protocol handlers if you want a custom <span class="kbd">mypoc://</span> scheme (advanced).</li>
+        </ul>
+      </section>
+
+      <section class="card" id="sec-9">
+        <h2>9. File locations, logs, and ACLs (supportable installs)</h2>
+
+        <h3>9.1 Recommended layout on disk</h3>
+        <div class="code">Program Files
+  \MyPOC
+    \Service   (binaries)
+    \Assets    (static PWA assets if hosted locally)
+
+ProgramData
+  \MyPOC
+    \config
+    \logs
+    \data</div>
+
+        <h3>9.2 ACL rules (common scenario)</h3>
+        <ul>
+          <li>Service runs as LocalService.</li>
+          <li>Service needs write access to ProgramData\MyPOC\logs and ProgramData\MyPOC\data.</li>
+          <li>Installer sets ACLs during install.</li>
+        </ul>
+
+        <div class="note">
+          The exact WiX elements depend on extension support.
+          If the extension is not available, you can set ACLs via a carefully written deferred custom action.
+        </div>
+
+        <h3>9.3 Do not write logs into Program Files</h3>
+        <ul>
+          <li>Program Files is for immutable, admin-owned binaries.</li>
+          <li>Writing there causes permission issues and messy support stories.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="sec-10">
+        <h2>10. Shortcuts and user experience</h2>
+
+        <h3>10.1 Start menu shortcut to local UI</h3>
+        <p>
+          You can create a shortcut that launches the browser to the local UI:
+          <span class="kbd">http://127.0.0.1:5123</span>.
+        </p>
+
+        <h3>10.2 First-run experience pattern</h3>
+        <ul>
+          <li>Installer installs and starts the service.</li>
+          <li>Installer optionally opens the UI at the end (optional checkbox).</li>
+          <li>User optionally installs the PWA from browser UI (if you are using the standard PWA install flow).</li>
+        </ul>
+
+        <div class="warn">
+          Auto-opening browsers and auto-installing PWAs can conflict with enterprise policies.
+          Keep it conservative by default.
+        </div>
+      </section>
+
+      <section class="card" id="sec-11">
+        <h2>11. Burn bootstrapper for prerequisites (advanced but common)</h2>
+
+        <h3>11.1 When you need Burn</h3>
+        <ul>
+          <li>Framework-dependent service host requires .NET runtime (or hosting bundle).</li>
+          <li>You want one “setup.exe” that installs prerequisites then the MSI.</li>
+          <li>You need prerequisite detection and conditional chains.</li>
+        </ul>
+
+        <h3>11.2 Typical chain</h3>
+        <div class="code">Setup.exe (Burn bundle)
+  1) Detect .NET runtime
+  2) If missing, install runtime (silent)
+  3) Install MyPOC.msi
+  4) Log everything to a known location</div>
+
+        <div class="note">
+          In enterprise deployments (Intune/SCCM), sometimes you skip Burn and rely on baselined runtimes.
+          But for a standalone installer, Burn is often the cleanest UX.
+        </div>
+      </section>
+
+      <section class="card" id="sec-12">
+        <h2>12. Upgrades that do not break (the rules you actually follow)</h2>
+
+        <h3>12.1 Use MajorUpgrade</h3>
+        <ul>
+          <li>Keep one UpgradeCode forever for the product line.</li>
+          <li>Bump Product Version each release.</li>
+          <li>Let MajorUpgrade remove previous versions automatically.</li>
+        </ul>
+
+        <h3>12.2 Stable component GUIDs</h3>
+        <ul>
+          <li>Every component must have a stable GUID.</li>
+          <li>If the key path resource identity changes “meaningfully”, you may need a new component.</li>
+          <li>If you keep changing GUIDs randomly, MSI cannot reason about upgrade and repair.</li>
+        </ul>
+
+        <h3>12.3 Services during upgrade</h3>
+        <ul>
+          <li>Stop service before replacing binaries.</li>
+          <li>Replace binaries.</li>
+          <li>Start service afterwards.</li>
+        </ul>
+
+        <div class="warn">
+          If your service holds file locks, the upgrade sequence matters.
+          Make sure ServiceControl stop happens early enough and you wait for stop.
+        </div>
+
+        <h3>12.4 Data preservation</h3>
+        <ul>
+          <li>Data under ProgramData should remain across upgrades by default.</li>
+          <li>On uninstall, decide whether to remove data (usually keep it unless user explicitly chooses “remove data”).</li>
+        </ul>
+      </section>
+
+      <section class="card" id="sec-13">
+        <h2>13. Logging and supportability (MSI logs + service logs)</h2>
+
+        <h3>13.1 MSI logging</h3>
+        <p>For troubleshooting, you almost always want a verbose MSI log:</p>
+        <div class="code">msiexec /i MyPOC.msi /l*v install.log</div>
+
+        <h3>13.2 Where service logs should go</h3>
+        <ul>
+          <li>ProgramData\MyPOC\logs is a good default.</li>
+          <li>Optionally also write to Windows Event Log for high-level lifecycle events.</li>
+        </ul>
+
+        <h3>13.3 Service troubleshooting quick commands</h3>
+        <div class="code">sc query "MyPOC.ServiceHost"
+sc start "MyPOC.ServiceHost"
+sc stop "MyPOC.ServiceHost"
+
+# Event Viewer: Windows Logs -> Application/System
+# (if you log there)</div>
+      </section>
+
+      <section class="card" id="sec-14">
+        <h2>14. CI/CD integration (Azure DevOps oriented)</h2>
+
+        <h3>14.1 Build pipeline steps (high-level)</h3>
+        <ol>
+          <li>Restore/build PWA</li>
+          <li>Build/publish .NET service host</li>
+          <li>Generate/harvest WiX fragments (if you use harvesting)</li>
+          <li>Build MSI</li>
+          <li>Optionally build Burn bundle (setup.exe)</li>
+          <li>Sign artifacts (if required)</li>
+          <li>Publish artifacts</li>
+        </ol>
+
+        <h3>14.2 Version stamping</h3>
+        <ul>
+          <li>Single source of truth for version: pipeline variable (e.g., 1.4.12).</li>
+          <li>Use it for:
+            <ul>
+              <li>.NET assemblies</li>
+              <li>MSI Version</li>
+              <li>Bundle version</li>
+            </ul>
+          </li>
+        </ul>
+
+        <div class="note">
+          In MSI, Version has rules (max 3 numeric fields). If you need semver build metadata,
+          keep it in a separate property or file, not in MSI Version.
+        </div>
+      </section>
+
+      <section class="card" id="sec-15">
+        <h2>15. Enterprise deployment (Intune/SCCM style)</h2>
+
+        <h3>15.1 What enterprises like</h3>
+        <ul>
+          <li>Silent install: no UI, deterministic exit codes.</li>
+          <li>Reliable detection: registry keys / product code detection.</li>
+          <li>Repairable and uninstallable with logs.</li>
+        </ul>
+
+        <h3>15.2 Common silent commands</h3>
+        <div class="code"># Silent install
+msiexec /i MyPOC.msi /qn /norestart
+
+# Silent uninstall (product code or cached msi)
+msiexec /x {PRODUCT-CODE-GUID} /qn /norestart</div>
+
+        <h3>15.3 Detection rules (idea)</h3>
+        <ul>
+          <li>Registry key under HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall</li>
+          <li>Or a custom registry marker you create as part of install</li>
+          <li>Or service presence + version file in install folder</li>
+        </ul>
+
+        <div class="warn">
+          Service presence alone can be a weak detector if someone manually deletes it.
+          Prefer MSI product detection where possible.
+        </div>
+      </section>
+
+      <section class="card" id="sec-16">
+        <h2>16. Advanced topics (when you want to level up)</h2>
+
+        <h3>16.1 Avoid ports entirely: named pipes</h3>
+        <p>
+          If you want to eliminate port conflicts and firewall discussions, use named pipes.
+          Your PWA then needs a bridge (because browsers cannot directly talk to named pipes).
+          Typical solution: still expose localhost HTTP, but keep it locked down and authenticated.
+        </p>
+
+        <h3>16.2 Certificate and trust model</h3>
+        <ul>
+          <li>If you use HTTPS on localhost, you must manage certificates.</li>
+          <li>Installing certs into local machine stores is sensitive and must be carefully justified.</li>
+        </ul>
+
+        <h3>16.3 Offline-first PWA updates</h3>
+        <ul>
+          <li>Service worker caching strategy matters.</li>
+          <li>MSI upgrades update static assets, but service worker may keep old cached content.</li>
+          <li>Provide a cache-busting strategy (versioned assets, SW update flows).</li>
+        </ul>
+
+        <div class="bad">
+          PWA caching bugs are a top source of “but I updated and UI is still old” incidents.
+          Plan your cache invalidation deliberately.
+        </div>
+      </section>
+
+      <section class="card" id="sec-17">
+        <h2>17. Troubleshooting checklist (fast triage)</h2>
+
+        <h3>17.1 Install fails</h3>
+        <ul>
+          <li>Run with verbose MSI log: <span class="kbd">/l*v</span>.</li>
+          <li>Check if service user/identity has permissions.</li>
+          <li>Check file locks (service running while upgrading).</li>
+          <li>Check custom action failures (they are frequent failure points).</li>
+        </ul>
+
+        <h3>17.2 Service does not start</h3>
+        <ul>
+          <li>Check service account rights.</li>
+          <li>Check config file paths.</li>
+          <li>Check logs in ProgramData.</li>
+          <li>Try running the exe manually from console for immediate error output (if applicable).</li>
+        </ul>
+
+        <h3>17.3 PWA can’t talk to localhost API</h3>
+        <ul>
+          <li>Verify the service is running and listening on 127.0.0.1.</li>
+          <li>Check mixed-content rules if PWA is HTTPS but API is HTTP (browser security rules apply).</li>
+          <li>Consider CORS and origin policies (localhost origins are still origins).</li>
+        </ul>
+      </section>
+
+      <section class="card" id="sec-18">
+        <h2>18. Reference snippets (copy/paste zone)</h2>
+
+        <h3>18.1 “Install + log”</h3>
+        <div class="code">msiexec /i MyPOC.msi /l*v "%TEMP%\MyPOC-install.log"</div>
+
+        <h3>18.2 “Uninstall + log”</h3>
+        <div class="code">msiexec /x {PRODUCT-CODE-GUID} /l*v "%TEMP%\MyPOC-uninstall.log"</div>
+
+        <h3>18.3 “Service state”</h3>
+        <div class="code">sc query "MyPOC.ServiceHost"</div>
+
+        <h3>18.4 “Tail logs” (PowerShell)</h3>
+        <div class="code">Get-Content "C:\ProgramData\MyPOC\logs\service.log" -Wait</div>
+      </section>
+
+      <section class="card" id="sec-19">
+        <h2>19. Next steps: turning this into a real WiX implementation</h2>
+
+        <p>
+          This HTML page gives the blueprint and the engineering decisions.
+          To convert it into a working installer, the next concrete deliverable is:
+        </p>
+
+        <ol>
+          <li>Create a real WiX v4 project with correct extension references for ServiceInstall/ACL/Shortcuts.</li>
+          <li>Decide your packaging: framework-dependent + Burn, or self-contained without prerequisites.</li>
+          <li>Implement deterministic file inclusion (harvesting strategy or explicit fragments).</li>
+          <li>Implement service recovery and ACLs (prefer supported WiX extensions; use minimal custom actions).</li>
+          <li>Prove major upgrade behavior across 2-3 versions.</li>
+        </ol>
+
+        <div class="note">
+          If you paste your current WiX v4 skeleton (even minimal), I can rewrite it into a working structure for:
+          service install + service control + ProgramData folders + logging folder + shortcut to localhost UI.
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Update active TOC link based on current hash
+  function updateActiveLink() {
+    const hash = window.location.hash;
+    document.querySelectorAll('.toc a').forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === hash);
+    });
+  }
+
+  // Update active link on page load and hash change
+  updateActiveLink();
+  window.addEventListener('hashchange', updateActiveLink);
+</script>
 </body>
 </html>
+```
